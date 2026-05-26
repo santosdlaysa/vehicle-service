@@ -24,7 +24,8 @@
       "Bash(grep -r \"NEXT_PUBLIC_API_URL\" /c/Users/ldsantos/vehicle-service/.env*)",
       "Bash(taskkill:*)",
       "Bash(wc:*)",
-      "Bash(find /c/Users/ldsantos/vehicle-service/frontend/src/app -name \"page.tsx\" -exec echo {} \\\\;)"
+      "Bash(find /c/Users/ldsantos/vehicle-service/frontend/src/app -name \"page.tsx\" -exec echo {} \\\\;)",
+      "Bash(npx ts-node:*)"
     ]
   }
 }

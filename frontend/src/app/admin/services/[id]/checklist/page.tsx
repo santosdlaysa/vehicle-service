@@ -67,7 +67,9 @@ export default function ChecklistPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await api.put<{ checklist: Checklist }>(`/services/${id}/checklists/${activeTab}`, checklist);
+      const { scratches, dents, mirrorsOk, lightsOk, tiresOk, glassOk, internalObjects, fuelLevel, odometer, notes } = checklist;
+      const payload = { scratches, dents, mirrorsOk, lightsOk, tiresOk, glassOk, internalObjects, fuelLevel, odometer, notes };
+      const res = await api.put<{ checklist: Checklist }>(`/services/${id}/checklists/${activeTab}`, payload);
       setChecklist(res.checklist as any);
       if (activeTab === 'PICKUP') setPickupLocked(res.checklist.isLocked);
       else setDeliveryLocked(res.checklist.isLocked);

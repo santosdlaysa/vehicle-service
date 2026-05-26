@@ -52,6 +52,7 @@ export async function checklistRoutes(app: FastifyInstance) {
       schema: {
         body: {
           type: 'object',
+          additionalProperties: false,
           properties: {
             scratches: { type: 'boolean' },
             dents: { type: 'boolean' },
@@ -62,7 +63,6 @@ export async function checklistRoutes(app: FastifyInstance) {
             internalObjects: { type: 'string' },
             fuelLevel: { type: 'string', enum: ['E', '1/4', '1/2', '3/4', 'F'] },
             odometer: { type: 'number' },
-
             notes: { type: 'string' },
           },
         },
