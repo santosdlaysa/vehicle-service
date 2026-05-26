@@ -1,22 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { Service, STATUS_LABELS, ServiceStatus } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import Link from 'next/link';
 import { Car, ClipboardList, CheckCircle, Package, Clock } from 'lucide-react';
 
+const POLL_INTERVAL = 15_000; // 15 segundos
+
 export default function DashboardPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchServices = useCallback(() => {
     api
       .get<{ data: Service[] }>('/services?limit=5')
       .then((res) => setServices(res.data))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetchServices();
+    const interval = setInterval(fetchServices, POLL_INTERVAL);
+
+    function handleFocus() { fetchServices(); }
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') fetchServices();
+    });
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchServices]);
 
   const counts = services.reduce(
     (acc, s) => {

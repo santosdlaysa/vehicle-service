@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCustomerAuth } from '@/components/providers/CustomerAuthProvider';
-import { AlertCircle, Car } from 'lucide-react';
+import { AlertCircle, Car, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ClientLoginPage() {
@@ -76,7 +76,12 @@ export default function ClientLoginPage() {
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 size={16} className="animate-spin" />
+                Entrando...
+              </span>
+            ) : 'Entrar'}
           </button>
 
           <div className="text-center space-y-2">
