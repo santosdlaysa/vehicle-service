@@ -1,0 +1,30 @@
+databases:
+  - name: autotrack-db
+    databaseName: vehicle_service
+    user: postgres
+    plan: free
+
+services:
+  - type: web
+    name: autotrack-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node dist/server.js
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: autotrack-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false        # preencher no painel da Render
+      - key: SUPABASE_URL
+        sync: false        # preencher no painel da Render
+      - key: SUPABASE_KEY
+        sync: false        # preencher no painel da Render

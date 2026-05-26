@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ServiceStatus {
+  RECEIVED
+  IN_PROGRESS
+  FINISHED
+  READY
+  DELIVERED
+}
+
+enum MediaType {
+  ENTRY
+  EXIT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  services      Service[]       @relation("CreatedBy")
+  uploadedMedia ServiceMedia[]
+  statusChanges StatusHistory[]
+
+  @@map("users")
+}
+
+model Service {
+  id                 String        @id @default(uuid())
+  customerName       String        @map("customer_name")
+  customerPhone      String        @map("customer_phone")
+  vehicleModel       String        @map("vehicle_model")
+  vehiclePlate       String        @map("vehicle_plate")
+  vehicleColor       String        @map("vehicle_color")
+  status             ServiceStatus @default(RECEIVED)
+  linkSharedAt       DateTime?     @map("link_shared_at")
+  deliveredAt        DateTime?     @map("delivered_at")
+  receiptConfirmedAt DateTime?     @map("receipt_confirmed_at")
+  createdBy          String        @map("created_by")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  creator       User            @relation("CreatedBy", fields: [createdBy], references: [id])
+  checklist     Checklist?
+  media         ServiceMedia[]
+  statusHistory StatusHistory[]
+
+  @@map("services")
+}
+
+model Checklist {
+  id              String   @id @default(uuid())
+  serviceId       String   @unique @map("service_id")
+  scratches       Boolean  @default(false)
+  dents           Boolean  @default(false)
+  mirrorsOk       Boolean  @default(true) @map("mirrors_ok")
+  lightsOk        Boolean  @default(true) @map("lights_ok")
+  tiresOk         Boolean  @default(true) @map("tires_ok")
+  glassOk         Boolean  @default(true) @map("glass_ok")
+  internalObjects String?  @map("internal_objects")
+  fuelLevel       String   @default("1/2") @map("fuel_level")
+  notes           String?
+  isLocked        Boolean  @default(false) @map("is_locked")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("checklists")
+}
+
+model ServiceMedia {
+  id         String    @id @default(uuid())
+  serviceId  String    @map("service_id")
+  url        String
+  type       MediaType
+  uploadedBy String    @map("uploaded_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  service  Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploadedBy], references: [id])
+
+  @@map("service_media")
+}
+
+model StatusHistory {
+  id        String        @id @default(uuid())
+  serviceId String        @map("service_id")
+  oldStatus ServiceStatus? @map("old_status")
+  newStatus ServiceStatus @map("new_status")
+  changedBy String        @map("changed_by")
+  changedAt DateTime      @default(now()) @map("changed_at")
+
+  service       Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  changedByUser User    @relation(fields: [changedBy], references: [id])
+
+  @@map("status_history")
+}
