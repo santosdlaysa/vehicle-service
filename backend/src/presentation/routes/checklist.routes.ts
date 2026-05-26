@@ -113,7 +113,7 @@ export async function checklistRoutes(app: FastifyInstance) {
       throw new BusinessRuleError('Arquivo muito grande. Máximo permitido: 10 MB.');
     }
 
-    const label = (request.query as Record<string, string>).label || null;
+    const label = (request.query as Record<string, string>).label || undefined;
     const url = await storageService.upload(buffer, file.mimetype, id, `checklist-${checklistType}`);
     const photo = await checklistRepo.addPhoto(checklist.id, url, label);
 
