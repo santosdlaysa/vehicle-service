@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { Service, STATUS_LABELS, ServiceStatus } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import Link from 'next/link';
-import { Car, ClipboardList, CheckCircle, Package, Clock } from 'lucide-react';
+import { Car, ClipboardList, CheckCircle, Package, Clock, Plus } from 'lucide-react';
 
 const POLL_INTERVAL = 15_000; // 15 segundos
 
@@ -55,9 +55,18 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Visão geral dos atendimentos</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">Visão geral dos atendimentos</p>
+        </div>
+        <Link
+          href="/admin/services/new"
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={16} />
+          Novo atendimento
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-5">
