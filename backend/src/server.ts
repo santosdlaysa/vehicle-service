@@ -20,8 +20,12 @@ const app = Fastify({ logger: true });
 async function bootstrap() {
   await app.register(helmet, { global: true });
 
+  const allowedOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000')
+    .split(',')
+    .map((o) => o.trim());
+
   await app.register(cors, {
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
   });
 
