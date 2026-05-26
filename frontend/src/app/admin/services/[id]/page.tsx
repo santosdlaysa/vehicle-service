@@ -8,7 +8,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { StatusTimeline } from '@/components/ui/StatusTimeline';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight, Copy, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 
 export default function ServiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +16,7 @@ export default function ServiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [changingStatus, setChangingStatus] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [sharedLink, setSharedLink] = useState<string | null>(null);
 
   async function fetchService() {
     try {
@@ -46,13 +47,9 @@ export default function ServiceDetailPage() {
     try {
       const res = await api.post<{ link: string }>(`/services/${id}/share`, {});
       const link = res.link;
-
-      if (navigator.share) {
-        await navigator.share({ title: 'Acompanhe seu veículo', url: link });
-      } else {
-        await navigator.clipboard.writeText(link);
-        toast.success('Link copiado para a área de transferência!');
-      }
+      setSharedLink(link);
+      await navigator.clipboard.writeText(link);
+      toast.success('Link copiado para a área de transferência!');
       fetchService();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao compartilhar link');
@@ -71,6 +68,22 @@ export default function ServiceDetailPage() {
 
   const currentIdx = STATUS_ORDER.indexOf(service.status);
   const nextStatus = STATUS_ORDER[currentIdx + 1] as ServiceStatus | undefined;
+
+  const entryPhotos = service.media?.filter(m => m.type === 'ENTRY') ?? [];
+  const exitPhotos = service.media?.filter(m => m.type === 'EXIT') ?? [];
+
+  type Step = { label: string; done: boolean; href?: string; forStatus: ServiceStatus };
+
+  const allSteps: Step[] = [
+    { label: 'Preencher checklist', done: !!service.checklist, href: `/admin/services/${id}/checklist`, forStatus: 'RECEIVED' },
+    { label: 'Adicionar foto de entrada', done: entryPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'RECEIVED' },
+    { label: 'Adicionar foto de saída', done: exitPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'FINISHED' },
+    { label: 'Compartilhar link com cliente', done: !!service.linkSharedAt, forStatus: 'READY' },
+    { label: 'Cliente confirmou o recebimento', done: !!service.receiptConfirmedAt, forStatus: 'DELIVERED' },
+  ];
+
+  const currentSteps = allSteps.filter(s => s.forStatus === service.status);
+  const allCurrentStepsDone = currentSteps.every(s => s.done);
 
   return (
     <div className="p-8">
@@ -98,19 +111,75 @@ export default function ServiceDetailPage() {
           <h2 className="font-semibold text-gray-900 mb-4">Status do serviço</h2>
           <StatusTimeline currentStatus={service.status} />
 
-          <div className="mt-6 space-y-3">
-            {nextStatus && (
+          {/* Checklist de progresso completo */}
+          {service.status !== 'DELIVERED' && (
+            <div className="mt-5 border border-gray-100 rounded-lg overflow-hidden">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide px-3 py-2 bg-gray-50">
+                Checklist do atendimento
+              </p>
+              <ul className="divide-y divide-gray-50">
+                {allSteps.map((step, i) => {
+                  const isCurrent = step.forStatus === service.status;
+                  const isPast = STATUS_ORDER.indexOf(step.forStatus) < currentIdx;
+                  const isFuture = STATUS_ORDER.indexOf(step.forStatus) > currentIdx;
+
+                  return (
+                    <li key={i} className={`flex items-center gap-2.5 px-3 py-2.5 text-sm ${isFuture ? 'opacity-40' : ''}`}>
+                      {step.done
+                        ? <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                        : isFuture
+                          ? <Circle size={16} className="text-gray-200 shrink-0" />
+                          : <Circle size={16} className="text-amber-400 shrink-0" />
+                      }
+                      {step.href && isCurrent && !step.done ? (
+                        <Link href={step.href} className="text-blue-600 hover:underline">
+                          {step.label}
+                        </Link>
+                      ) : (
+                        <span className={step.done ? 'text-gray-400 line-through' : isFuture ? 'text-gray-400' : 'text-gray-700'}>
+                          {step.label}
+                        </span>
+                      )}
+                      {isPast && !step.done && (
+                        <span className="ml-auto text-xs text-red-400">não feito</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {currentSteps.length > 0 && !allCurrentStepsDone && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-3 py-2 border-t border-amber-100">
+                  <AlertCircle size={13} />
+                  Conclua os itens pendentes antes de avançar
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-5 space-y-3">
+            {nextStatus && nextStatus !== 'CLOSED' && (
               <button
                 onClick={() => handleStatusChange(nextStatus)}
-                disabled={changingStatus}
-                className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                disabled={changingStatus || !allCurrentStepsDone}
+                className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {changingStatus ? 'Atualizando...' : `Avançar: ${STATUS_LABELS[nextStatus]}`}
                 <ChevronRight size={16} />
               </button>
             )}
 
-            {!service.linkSharedAt && (
+            {service.status === 'DELIVERED' && (
+              <button
+                onClick={() => handleStatusChange('CLOSED')}
+                disabled={changingStatus}
+                className="w-full rounded-lg bg-gray-800 py-2.5 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {changingStatus ? 'Encerrando...' : 'Encerrar atendimento'}
+              </button>
+            )}
+
+            {service.status === 'READY' && !service.linkSharedAt && (
               <button
                 onClick={handleShare}
                 disabled={sharing}
@@ -122,10 +191,23 @@ export default function ServiceDetailPage() {
             )}
 
             {service.linkSharedAt && (
-              <p className="text-xs text-center text-gray-400">
-                Link compartilhado em{' '}
-                {new Date(service.linkSharedAt).toLocaleString('pt-BR')}
-              </p>
+              <div className="space-y-2">
+                <p className="text-xs text-center text-gray-400">
+                  Link compartilhado em{' '}
+                  {new Date(service.linkSharedAt).toLocaleString('pt-BR')}
+                </p>
+                <button
+                  onClick={async () => {
+                    const link = sharedLink ?? `${process.env.NEXT_PUBLIC_FRONTEND_URL}/service/${id}`;
+                    await navigator.clipboard.writeText(link);
+                    toast.success('Link copiado!');
+                  }}
+                  className="w-full rounded-lg border border-gray-300 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Copy size={14} />
+                  Copiar link
+                </button>
+              </div>
             )}
           </div>
         </div>

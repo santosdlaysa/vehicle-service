@@ -13,6 +13,7 @@ enum ServiceStatus {
   FINISHED
   READY
   DELIVERED
+  CLOSED
 }
 
 enum MediaType {

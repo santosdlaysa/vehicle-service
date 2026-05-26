@@ -29,7 +29,7 @@ async function request<T>(
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error ?? 'Erro desconhecido');
+    throw new Error(data.message ?? data.error ?? 'Erro desconhecido');
   }
 
   return data as T;
@@ -56,7 +56,7 @@ export const api = {
       headers,
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? 'Erro no upload');
+    if (!res.ok) throw new Error(data.message ?? data.error ?? 'Erro no upload');
     return data as T;
   },
 };

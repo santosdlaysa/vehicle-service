@@ -3,7 +3,8 @@ export type ServiceStatus =
   | 'IN_PROGRESS'
   | 'FINISHED'
   | 'READY'
-  | 'DELIVERED';
+  | 'DELIVERED'
+  | 'CLOSED';
 
 export const STATUS_LABELS: Record<ServiceStatus, string> = {
   RECEIVED: 'Recebido',
@@ -11,6 +12,7 @@ export const STATUS_LABELS: Record<ServiceStatus, string> = {
   FINISHED: 'Finalizado',
   READY: 'Pronto para entrega',
   DELIVERED: 'Entregue',
+  CLOSED: 'Encerrado',
 };
 
 export const STATUS_ORDER: ServiceStatus[] = [
@@ -19,6 +21,7 @@ export const STATUS_ORDER: ServiceStatus[] = [
   'FINISHED',
   'READY',
   'DELIVERED',
+  'CLOSED',
 ];
 
 export interface User {

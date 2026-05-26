@@ -10,7 +10,6 @@ export async function getPublicService(uuid: string) {
 export async function confirmReceipt(uuid: string) {
   const res = await fetch(`${API_URL}/public/service/${uuid}/confirm`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? 'Erro ao confirmar recebimento');

@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid';
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { realtime: { enabled: false } as never },
 );
 
 const BUCKET = process.env.SUPABASE_BUCKET ?? 'service-media';
