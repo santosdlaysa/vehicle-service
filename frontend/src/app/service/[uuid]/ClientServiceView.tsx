@@ -152,20 +152,23 @@ export function ClientServiceView({ initialData, uuid }: Props) {
 
             <div className="space-y-3">
               {[
-                { label: 'Arranhões', value: checklist.scratches },
-                { label: 'Amassados', value: checklist.dents },
-                { label: 'Retrovisores OK', value: checklist.mirrorsOk },
-                { label: 'Faróis OK', value: checklist.lightsOk },
-                { label: 'Pneus OK', value: checklist.tiresOk },
-                { label: 'Vidros OK', value: checklist.glassOk },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <span className="text-sm text-gray-700">{label}</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {value ? 'Sim' : 'Não'}
-                  </span>
-                </div>
-              ))}
+                { question: 'A lataria apresenta arranhões?', value: checklist.scratches, invertConforme: true },
+                { question: 'A lataria apresenta amassados?', value: checklist.dents, invertConforme: true },
+                { question: 'Retrovisores em bom estado?', value: checklist.mirrorsOk, invertConforme: false },
+                { question: 'Faróis e lanternas funcionando?', value: checklist.lightsOk, invertConforme: false },
+                { question: 'Pneus em boas condições?', value: checklist.tiresOk, invertConforme: false },
+                { question: 'Vidros e para-brisa íntegros?', value: checklist.glassOk, invertConforme: false },
+              ].map(({ question, value, invertConforme }) => {
+                const isConforme = invertConforme ? !value : value;
+                return (
+                  <div key={question} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <span className="text-sm text-gray-700">{question}</span>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${isConforme ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {isConforme ? 'Conforme' : 'Não Conforme'}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             <div>

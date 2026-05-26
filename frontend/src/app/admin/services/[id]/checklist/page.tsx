@@ -119,12 +119,12 @@ export default function ChecklistPage() {
   }
 
   const checkItems = [
-    { field: 'scratches', label: 'Arranhoes' },
-    { field: 'dents', label: 'Amassados' },
-    { field: 'mirrorsOk', label: 'Retrovisores OK' },
-    { field: 'lightsOk', label: 'Farois OK' },
-    { field: 'tiresOk', label: 'Pneus OK' },
-    { field: 'glassOk', label: 'Vidros OK' },
+    { field: 'scratches', question: 'A lataria apresenta arranhões?', invertConforme: true },
+    { field: 'dents', question: 'A lataria apresenta amassados?', invertConforme: true },
+    { field: 'mirrorsOk', question: 'Os retrovisores estão em bom estado?', invertConforme: false },
+    { field: 'lightsOk', question: 'Os faróis e lanternas funcionam corretamente?', invertConforme: false },
+    { field: 'tiresOk', question: 'Os pneus estão em boas condições?', invertConforme: false },
+    { field: 'glassOk', question: 'Os vidros e para-brisa estão íntegros?', invertConforme: false },
   ];
 
   const photos = checklist.photos || [];
@@ -300,29 +300,43 @@ export default function ChecklistPage() {
 
         {/* Estado do veiculo */}
         <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">Estado do veiculo</p>
-          <div className="space-y-3">
-            {checkItems.map(({ field, label }) => (
-              <label key={field} className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm text-gray-700">{label}</span>
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => handleToggle(field)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    checklist[field as keyof typeof checklist]
-                      ? 'bg-blue-600'
-                      : 'bg-gray-200'
-                  } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      checklist[field as keyof typeof checklist] ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </label>
-            ))}
+          <p className="text-sm font-semibold text-gray-700 mb-3">Estado do veículo</p>
+          <div className="space-y-4">
+            {checkItems.map(({ field, question, invertConforme }) => {
+              const rawValue = checklist[field as keyof typeof checklist] as boolean;
+              const isConforme = invertConforme ? !rawValue : rawValue;
+              return (
+                <div key={field} className="border border-gray-100 rounded-lg p-3">
+                  <p className="text-sm text-gray-700 mb-2">{question}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => setChecklist((prev) => ({ ...prev, [field]: invertConforme ? false : true }))}
+                      className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-colors ${
+                        isConforme
+                          ? 'border-green-600 bg-green-50 text-green-700'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Conforme
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => setChecklist((prev) => ({ ...prev, [field]: invertConforme ? true : false }))}
+                      className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-colors ${
+                        !isConforme
+                          ? 'border-red-600 bg-red-50 text-red-700'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Não Conforme
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -1,18 +1,16 @@
 -- CreateEnum: ChecklistType
 CREATE TYPE "ChecklistType" AS ENUM ('PICKUP', 'DELIVERY');
 
--- 1. Rename old ServiceStatus values to new ones
--- First, add the new values
-ALTER TYPE "ServiceStatus" ADD VALUE IF NOT EXISTS 'AGUARDANDO_COLETA';
-ALTER TYPE "ServiceStatus" ADD VALUE IF NOT EXISTS 'EM_TRANSITO_PARA_ESTETICA';
-ALTER TYPE "ServiceStatus" ADD VALUE IF NOT EXISTS 'RECEBIDO_NA_ESTETICA';
-ALTER TYPE "ServiceStatus" ADD VALUE IF NOT EXISTS 'EM_LAVAGEM_SERVICO';
-ALTER TYPE "ServiceStatus" ADD VALUE IF NOT EXISTS 'PRONTO_PARA_DEVOLUCAO';
-ALTER TYPE "ServiceStatus" ADD VALUE IF NOT EXISTS 'EM_TRANSITO_PARA_ENTREGA';
-ALTER TYPE "ServiceStatus" ADD VALUE IF NOT EXISTS 'ENTREGUE_CONCLUIDO';
+-- 1. Convert enum columns to TEXT first (avoids PostgreSQL "new enum value must be committed" error)
+ALTER TABLE "services" ALTER COLUMN "status" DROP DEFAULT;
+ALTER TABLE "services" ALTER COLUMN "status" TYPE TEXT;
+ALTER TABLE "status_history" ALTER COLUMN "old_status" TYPE TEXT;
+ALTER TABLE "status_history" ALTER COLUMN "new_status" TYPE TEXT;
 
--- 2. Migrate existing data to new status values
--- Map old statuses to new ones
+-- Drop old enum
+DROP TYPE "ServiceStatus";
+
+-- 2. Migrate existing data to new status values (now operating on TEXT columns)
 UPDATE "services" SET "status" = 'AGUARDANDO_COLETA' WHERE "status" = 'PENDING';
 UPDATE "services" SET "status" = 'AGUARDANDO_COLETA' WHERE "status" = 'RECEIVED';
 UPDATE "services" SET "status" = 'EM_TRANSITO_PARA_ESTETICA' WHERE "status" = 'IN_PROGRESS';
@@ -21,7 +19,6 @@ UPDATE "services" SET "status" = 'PRONTO_PARA_DEVOLUCAO' WHERE "status" = 'READY
 UPDATE "services" SET "status" = 'ENTREGUE_CONCLUIDO' WHERE "status" = 'DELIVERED';
 UPDATE "services" SET "status" = 'ENTREGUE_CONCLUIDO' WHERE "status" = 'CLOSED';
 
--- Migrate status_history too
 UPDATE "status_history" SET "old_status" = 'AGUARDANDO_COLETA' WHERE "old_status" = 'PENDING';
 UPDATE "status_history" SET "old_status" = 'AGUARDANDO_COLETA' WHERE "old_status" = 'RECEIVED';
 UPDATE "status_history" SET "old_status" = 'EM_TRANSITO_PARA_ESTETICA' WHERE "old_status" = 'IN_PROGRESS';
@@ -37,14 +34,6 @@ UPDATE "status_history" SET "new_status" = 'EM_LAVAGEM_SERVICO' WHERE "new_statu
 UPDATE "status_history" SET "new_status" = 'PRONTO_PARA_DEVOLUCAO' WHERE "new_status" = 'READY';
 UPDATE "status_history" SET "new_status" = 'ENTREGUE_CONCLUIDO' WHERE "new_status" = 'DELIVERED';
 UPDATE "status_history" SET "new_status" = 'ENTREGUE_CONCLUIDO' WHERE "new_status" = 'CLOSED';
-
--- 3. Now recreate the enum without old values
--- PostgreSQL doesn't support DROP VALUE from enum, so we need to recreate
-ALTER TABLE "services" ALTER COLUMN "status" TYPE TEXT;
-ALTER TABLE "status_history" ALTER COLUMN "old_status" TYPE TEXT;
-ALTER TABLE "status_history" ALTER COLUMN "new_status" TYPE TEXT;
-
-DROP TYPE "ServiceStatus";
 
 CREATE TYPE "ServiceStatus" AS ENUM (
   'AGUARDANDO_COLETA',

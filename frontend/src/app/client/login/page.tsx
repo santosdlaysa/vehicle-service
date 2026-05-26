@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCustomerAuth } from '@/components/providers/CustomerAuthProvider';
-import { Car } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { AlertCircle, Car } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ClientLoginPage() {
@@ -13,15 +12,17 @@ export default function ClientLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError('');
     setLoading(true);
     try {
       await login(email, password);
       router.replace('/client/dashboard');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Falha no login');
+      setError(err instanceof Error ? err.message : 'E-mail ou senha incorretos.');
     } finally {
       setLoading(false);
     }
@@ -39,6 +40,13 @@ export default function ClientLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-2xl p-8 shadow-xl">
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+              <AlertCircle size={16} className="text-red-500 shrink-0" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
             <input
