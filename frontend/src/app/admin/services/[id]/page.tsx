@@ -74,10 +74,10 @@ export default function ServiceDetailPage() {
   type Step = { label: string; done: boolean; href?: string; forStatus: ServiceStatus };
 
   const allSteps: Step[] = [
-    { label: 'Preencher checklist de busca', done: !!(service.checklists?.find(c => c.type === 'PICKUP')), href: `/admin/services/${id}/checklist`, forStatus: 'AGUARDANDO_COLETA' },
+    { label: 'Preencher checklist de busca', done: !!(service.checklists?.find(c => c.type === 'PICKUP')), href: `/admin/services/${id}/checklist?tab=PICKUP`, forStatus: 'AGUARDANDO_COLETA' },
     { label: 'Adicionar foto de entrada', done: entryPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'RECEBIDO_NA_ESTETICA' },
     { label: 'Adicionar foto de saida', done: exitPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'EM_LAVAGEM_SERVICO' },
-    { label: 'Preencher checklist de entrega', done: !!(service.checklists?.find(c => c.type === 'DELIVERY')), href: `/admin/services/${id}/checklist`, forStatus: 'EM_TRANSITO_PARA_ENTREGA' },
+    { label: 'Preencher checklist de entrega', done: !!(service.checklists?.find(c => c.type === 'DELIVERY')), href: `/admin/services/${id}/checklist?tab=DELIVERY`, forStatus: 'EM_TRANSITO_PARA_ENTREGA' },
     // Compartilhar link só aparece para clientes sem cadastro
     ...(!service.customerId ? [{ label: 'Compartilhar link com cliente', done: !!service.linkSharedAt, forStatus: 'PRONTO_PARA_DEVOLUCAO' as ServiceStatus }] : []),
     { label: 'Cliente confirmou o recebimento', done: !!service.receiptConfirmedAt, forStatus: 'ENTREGUE_CONCLUIDO' },

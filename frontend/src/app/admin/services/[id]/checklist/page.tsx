@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Checklist, ChecklistType, ChecklistPhoto } from '@/types';
 import toast from 'react-hot-toast';
@@ -26,7 +26,9 @@ const DEFAULT_CHECKLIST: Partial<Checklist> = {
 
 export default function ChecklistPage() {
   const { id } = useParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState<ChecklistType>('PICKUP');
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'DELIVERY' ? 'DELIVERY' : 'PICKUP';
+  const [activeTab, setActiveTab] = useState<ChecklistType>(initialTab);
   const [pickup, setPickup] = useState<Partial<Checklist>>(DEFAULT_CHECKLIST);
   const [delivery, setDelivery] = useState<Partial<Checklist>>(DEFAULT_CHECKLIST);
   const [pickupLocked, setPickupLocked] = useState(false);
