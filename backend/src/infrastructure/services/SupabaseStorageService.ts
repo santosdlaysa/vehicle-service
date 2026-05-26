@@ -15,7 +15,7 @@ export class SupabaseStorageService {
     buffer: Buffer,
     mimeType: string,
     serviceId: string,
-    type: 'ENTRY' | 'EXIT',
+    type: string,
   ): Promise<string> {
     const compressed = await sharp(buffer)
       .resize({ width: 1920, withoutEnlargement: true })

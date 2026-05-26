@@ -20,4 +20,23 @@ export class PrismaCustomerRepository {
   async verifyPassword(plainPassword: string, hash: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, hash);
   }
+
+  async setResetToken(email: string, token: string, expiresAt: Date) {
+    return prisma.customer.update({
+      where: { email },
+      data: { resetToken: token, resetTokenExpiresAt: expiresAt },
+    });
+  }
+
+  async findByResetToken(token: string) {
+    return prisma.customer.findUnique({ where: { resetToken: token } });
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    return prisma.customer.update({
+      where: { resetToken: token },
+      data: { passwordHash, resetToken: null, resetTokenExpiresAt: null },
+    });
+  }
 }

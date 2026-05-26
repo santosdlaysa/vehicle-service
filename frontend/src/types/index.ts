@@ -69,6 +69,14 @@ export interface Service {
   statusHistory?: StatusHistory[];
 }
 
+export interface ChecklistPhoto {
+  id: string;
+  checklistId: string;
+  url: string;
+  label: string | null;
+  createdAt: string;
+}
+
 export interface Checklist {
   id: string;
   serviceId: string;
@@ -82,9 +90,9 @@ export interface Checklist {
   internalObjects: string | null;
   fuelLevel: string;
   odometer: number | null;
-  odometerPhotoUrl: string | null;
   notes: string | null;
   isLocked: boolean;
+  photos: ChecklistPhoto[];
   createdAt: string;
   updatedAt: string;
 }

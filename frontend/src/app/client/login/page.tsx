@@ -71,12 +71,19 @@ export default function ClientLoginPage() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
 
-          <p className="text-center text-sm text-gray-500">
-            Nao tem conta?{' '}
-            <Link href="/client/register" className="font-medium text-blue-600 hover:underline">
-              Cadastre-se
-            </Link>
-          </p>
+          <div className="text-center space-y-2">
+            <p>
+              <Link href="/client/forgot-password" className="text-sm font-medium text-blue-600 hover:underline">
+                Esqueci minha senha
+              </Link>
+            </p>
+            <p className="text-sm text-gray-500">
+              Nao tem conta?{' '}
+              <Link href="/client/register" className="font-medium text-blue-600 hover:underline">
+                Cadastre-se
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>

@@ -16,7 +16,13 @@
       "Bash(npx next:*)",
       "Bash(curl:*)",
       "Bash(tasklist)",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(taskkill //PID 48020 //F)",
+      "Bash(taskkill //PID 40036 //F)",
+      "Bash(taskkill //PID 3476 //F)",
+      "Bash(grep -r \"NEXT_PUBLIC_API_URL\" /c/Users/ldsantos/vehicle-service/frontend/.env*)",
+      "Bash(grep -r \"NEXT_PUBLIC_API_URL\" /c/Users/ldsantos/vehicle-service/.env*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

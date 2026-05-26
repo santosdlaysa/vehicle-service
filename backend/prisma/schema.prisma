@@ -37,12 +37,14 @@ model User {
 }
 
 model Customer {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  phone        String
-  passwordHash String   @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id                 String    @id @default(uuid())
+  name               String
+  email              String    @unique
+  phone              String
+  passwordHash       String    @map("password_hash")
+  resetToken         String?   @unique @map("reset_token")
+  resetTokenExpiresAt DateTime? @map("reset_token_expires_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
 
   services Service[]
 
@@ -97,16 +99,28 @@ model Checklist {
   internalObjects  String?       @map("internal_objects")
   fuelLevel        String        @default("1/2") @map("fuel_level")
   odometer         Int?
-  odometerPhotoUrl String?       @map("odometer_photo_url")
   notes            String?
   isLocked         Boolean       @default(false) @map("is_locked")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  service Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  photos  ChecklistPhoto[]
 
   @@unique([serviceId, type])
   @@map("checklists")
+}
+
+model ChecklistPhoto {
+  id          String    @id @default(uuid())
+  checklistId String    @map("checklist_id")
+  url         String
+  label       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  checklist Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@map("checklist_photos")
 }
 
 model ServiceMedia {

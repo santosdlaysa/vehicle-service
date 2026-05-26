@@ -20,7 +20,6 @@ export async function upsertChecklistUseCase(
     internalObjects?: string;
     fuelLevel?: string;
     odometer?: number;
-    odometerPhotoUrl?: string;
     notes?: string;
   },
 ) {

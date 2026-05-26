@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Checklist, ChecklistType } from '@/types';
+import { Checklist, ChecklistType, ChecklistPhoto } from '@/types';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { ArrowLeft, Lock, Truck, Package } from 'lucide-react';
+import { ArrowLeft, Lock, Truck, Package, Camera, X, Loader2, ImagePlus } from 'lucide-react';
 
 const FUEL_OPTIONS = ['E', '1/4', '1/2', '3/4', 'F'];
 
@@ -20,8 +20,8 @@ const DEFAULT_CHECKLIST: Partial<Checklist> = {
   internalObjects: '',
   fuelLevel: '1/2',
   odometer: null,
-  odometerPhotoUrl: '',
   notes: '',
+  photos: [],
 };
 
 export default function ChecklistPage() {
@@ -34,6 +34,9 @@ export default function ChecklistPage() {
   const [serviceClosed, setServiceClosed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api.get<{ pickup: Checklist | null; delivery: Checklist | null; serviceClosed?: boolean }>(`/services/${id}/checklists`)
@@ -76,14 +79,55 @@ export default function ChecklistPage() {
     }
   }
 
+  async function uploadFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await api.upload<{ photo: ChecklistPhoto }>(
+          `/services/${id}/checklists/${activeTab}/photos`,
+          formData,
+        );
+        setChecklist((prev) => ({
+          ...prev,
+          photos: [...(prev.photos || []), res.photo],
+        }));
+      }
+      toast.success('Foto(s) enviada(s) com sucesso!');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao enviar foto');
+    } finally {
+      setUploading(false);
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
+    }
+  }
+
+  async function handleDeletePhoto(photoId: string) {
+    try {
+      await api.delete(`/services/${id}/checklists/${activeTab}/photos/${photoId}`);
+      setChecklist((prev) => ({
+        ...prev,
+        photos: (prev.photos || []).filter((p) => p.id !== photoId),
+      }));
+      toast.success('Foto removida.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover foto');
+    }
+  }
+
   const checkItems = [
-    { field: 'scratches', label: 'Arranhões' },
+    { field: 'scratches', label: 'Arranhoes' },
     { field: 'dents', label: 'Amassados' },
     { field: 'mirrorsOk', label: 'Retrovisores OK' },
-    { field: 'lightsOk', label: 'Faróis OK' },
+    { field: 'lightsOk', label: 'Farois OK' },
     { field: 'tiresOk', label: 'Pneus OK' },
     { field: 'glassOk', label: 'Vidros OK' },
   ];
+
+  const photos = checklist.photos || [];
 
   if (loading) return <div className="p-8 text-center text-gray-400">Carregando...</div>;
 
@@ -135,14 +179,113 @@ export default function ChecklistPage() {
       <p className="text-sm text-gray-500 mb-4">
         {activeTab === 'PICKUP'
           ? 'Preencha na casa/trabalho do cliente antes de ligar o carro.'
-          : 'Preencha na devolução para o cliente conferir o estado do veículo.'}
+          : 'Preencha na devolucao para o cliente conferir o estado do veiculo.'}
       </p>
 
       <form onSubmit={handleSave} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
-        {/* Odômetro - obrigatório no PICKUP */}
+        {/* Fotos do veiculo */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Fotos do veiculo
+          </label>
+          <p className="text-xs text-gray-400 mb-3">
+            Registre o estado do veiculo: painel (quilometragem e combustivel), lataria, pneus, interior etc.
+          </p>
+
+          {/* Grid de fotos */}
+          {photos.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {photos.map((photo) => (
+                <div key={photo.id} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200">
+                  <img
+                    src={photo.url}
+                    alt={photo.label || 'Foto do checklist'}
+                    className="w-full h-full object-cover"
+                  />
+                  {!isLocked && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePhoto(photo.id)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                  {photo.label && (
+                    <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1.5 py-0.5 truncate">
+                      {photo.label}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Botoes de captura - camera e galeria */}
+          {!isLocked && (
+            <div className="flex gap-2">
+              {/* Input para camera (abre camera traseira no celular) */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => uploadFiles(e.target.files)}
+                className="hidden"
+              />
+              {/* Input para galeria (permite selecionar multiplas fotos) */}
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(e) => uploadFiles(e.target.files)}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => cameraInputRef.current?.click()}
+                className="flex-1 flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-colors justify-center disabled:opacity-50"
+              >
+                {uploading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <>
+                    <Camera size={16} />
+                    Tirar foto
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => galleryInputRef.current?.click()}
+                className="flex-1 flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-colors justify-center disabled:opacity-50"
+              >
+                {uploading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <>
+                    <ImagePlus size={16} />
+                    Galeria
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {photos.length === 0 && isLocked && (
+            <p className="text-sm text-gray-400">Nenhuma foto registrada.</p>
+          )}
+        </div>
+
+        {/* Odometro */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Quilometragem (Odômetro) {activeTab === 'PICKUP' && <span className="text-red-500">*</span>}
+            Quilometragem (Odometro) {activeTab === 'PICKUP' && <span className="text-red-500">*</span>}
           </label>
           <input
             type="number"
@@ -152,28 +295,12 @@ export default function ChecklistPage() {
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
             placeholder="Ex: 45230"
           />
-          {activeTab === 'PICKUP' && (
-            <p className="text-xs text-gray-400 mt-1">Tire uma foto do painel mostrando a quilometragem e o nível de combustível.</p>
-          )}
+          <p className="text-xs text-gray-400 mt-1">Tire uma foto do painel mostrando a quilometragem.</p>
         </div>
 
-        {/* Foto do painel/odômetro */}
+        {/* Estado do veiculo */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
-            URL da foto do painel {activeTab === 'PICKUP' && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="text"
-            disabled={isLocked}
-            value={checklist.odometerPhotoUrl ?? ''}
-            onChange={(e) => setChecklist((prev) => ({ ...prev, odometerPhotoUrl: e.target.value }))}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
-            placeholder="URL da foto do painel..."
-          />
-        </div>
-
-        <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">Estado do veículo</p>
+          <p className="text-sm font-semibold text-gray-700 mb-3">Estado do veiculo</p>
           <div className="space-y-3">
             {checkItems.map(({ field, label }) => (
               <label key={field} className="flex items-center justify-between cursor-pointer">
@@ -199,8 +326,9 @@ export default function ChecklistPage() {
           </div>
         </div>
 
+        {/* Nivel de combustivel */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Nível de combustível</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Nivel de combustivel</label>
           <div className="flex gap-2">
             {FUEL_OPTIONS.map((opt) => (
               <button
@@ -220,6 +348,7 @@ export default function ChecklistPage() {
           </div>
         </div>
 
+        {/* Objetos internos */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Objetos internos</label>
           <input
@@ -232,15 +361,16 @@ export default function ChecklistPage() {
           />
         </div>
 
+        {/* Observacoes */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Observações</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Observacoes</label>
           <textarea
             rows={3}
             disabled={isLocked}
             value={checklist.notes ?? ''}
             onChange={(e) => setChecklist((prev) => ({ ...prev, notes: e.target.value }))}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50 resize-none"
-            placeholder="Observações gerais sobre o veículo..."
+            placeholder="Observacoes gerais sobre o veiculo..."
           />
         </div>
 
@@ -250,7 +380,7 @@ export default function ChecklistPage() {
             disabled={saving}
             className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? 'Salvando...' : `Salvar ${activeTab === 'PICKUP' ? 'checklist de busca' : 'checklist de entrega'}`}
+            {saving ? 'Salvando...' : 'Salvar checklist'}
           </button>
         )}
       </form>
