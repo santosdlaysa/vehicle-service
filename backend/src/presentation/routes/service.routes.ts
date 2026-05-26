@@ -34,6 +34,9 @@ export async function serviceRoutes(app: FastifyInstance) {
             vehicleModel: { type: 'string', minLength: 2 },
             vehiclePlate: { type: 'string', minLength: 5 },
             vehicleColor: { type: 'string', minLength: 2 },
+            pickupAddress: { type: 'string' },
+            deliveryAddress: { type: 'string' },
+            driverName: { type: 'string' },
           },
         },
       },
@@ -45,6 +48,9 @@ export async function serviceRoutes(app: FastifyInstance) {
         vehicleModel: string;
         vehiclePlate: string;
         vehicleColor: string;
+        pickupAddress?: string;
+        deliveryAddress?: string;
+        driverName?: string;
       };
       const service = await createServiceUseCase({ ...body, createdBy: request.userId });
       return reply.status(201).send({ success: true, service });
@@ -70,6 +76,9 @@ export async function serviceRoutes(app: FastifyInstance) {
             vehicleModel: { type: 'string' },
             vehiclePlate: { type: 'string' },
             vehicleColor: { type: 'string' },
+            pickupAddress: { type: 'string' },
+            deliveryAddress: { type: 'string' },
+            driverName: { type: 'string' },
           },
         },
       },
@@ -110,7 +119,7 @@ export async function serviceRoutes(app: FastifyInstance) {
     await serviceRepo.shareLink(id);
     return reply.send({
       success: true,
-      message: 'Link compartilhado e checklist bloqueado.',
+      message: 'Link compartilhado e checklists bloqueados.',
       link: `${process.env.FRONTEND_URL}/service/${id}`,
     });
   });

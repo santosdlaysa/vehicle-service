@@ -6,7 +6,7 @@ export async function confirmReceiptUseCase(uuid: string) {
   const service = await prisma.service.findUnique({ where: { id: uuid } });
   if (!service) throw new NotFoundError('Atendimento');
 
-  if (service.status !== 'DELIVERED') {
+  if (service.status !== 'ENTREGUE_CONCLUIDO') {
     throw new BusinessRuleError('O veículo ainda não foi entregue.');
   }
 

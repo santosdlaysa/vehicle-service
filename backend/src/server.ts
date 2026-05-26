@@ -11,6 +11,8 @@ import { serviceRoutes } from './presentation/routes/service.routes';
 import { checklistRoutes } from './presentation/routes/checklist.routes';
 import { mediaRoutes } from './presentation/routes/media.routes';
 import { publicRoutes } from './presentation/routes/public.routes';
+import { customerAuthRoutes } from './presentation/routes/customer-auth.routes';
+import { customerServiceRoutes } from './presentation/routes/customer-service.routes';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
 const app = Fastify({ logger: true });
@@ -46,6 +48,10 @@ async function bootstrap() {
   await app.register(serviceRoutes, { prefix: '/api' });
   await app.register(checklistRoutes, { prefix: '/api' });
   await app.register(mediaRoutes, { prefix: '/api' });
+
+  // Customer routes — JWT protected (customer role)
+  await app.register(customerAuthRoutes, { prefix: '/api' });
+  await app.register(customerServiceRoutes, { prefix: '/api' });
 
   app.setErrorHandler(errorHandler);
 

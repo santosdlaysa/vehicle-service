@@ -8,6 +8,9 @@ export async function createServiceUseCase(data: {
   vehicleModel: string;
   vehiclePlate: string;
   vehicleColor: string;
+  pickupAddress?: string;
+  deliveryAddress?: string;
+  driverName?: string;
   createdBy: string;
 }) {
   return serviceRepo.create(data);

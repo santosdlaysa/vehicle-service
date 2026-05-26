@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(xargs grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ls node_modules/.bin/tsc*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(npx prisma:*)",
+      "Bash(netstat -ano)",
+      "Bash(npm run:*)",
+      "Bash(npx tsx -e ':*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl -s http://localhost:3001/api/services/970aa7c3-04bc-4cd4-8f1f-1066941391f8/checklist -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlMDA0MTg4OC1lZmZmLTQ4YzktOGU4My01ZjBmMmNmZTZkMzciLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3Nzk3OTc4MDcsImV4cCI6MTc4MDQwMjYwN30.S9pxyDRND2J3ouBeoSQ8KDUTWPAE60AzSSw0RkwbVo8')",
+      "Bash(curl -s -X PUT http://localhost:3001/api/services/970aa7c3-04bc-4cd4-8f1f-1066941391f8/checklist -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlMDA0MTg4OC1lZmZmLTQ4YzktOGU4My01ZjBmMmNmZTZkMzciLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3Nzk3OTc4MDcsImV4cCI6MTc4MDQwMjYwN30.S9pxyDRND2J3ouBeoSQ8KDUTWPAE60AzSSw0RkwbVo8' -H 'Content-Type: application/json' -d '{\"notes\":\"teste\"}')",
+      "Bash(npx next:*)",
+      "Bash(curl:*)"
     ]
   }
 }

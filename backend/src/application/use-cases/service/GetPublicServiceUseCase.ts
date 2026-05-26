@@ -6,7 +6,7 @@ export async function getPublicServiceUseCase(uuid: string) {
   const service = await prisma.service.findUnique({
     where: { id: uuid },
     include: {
-      checklist: true,
+      checklists: true,
       media: { orderBy: { createdAt: 'asc' } },
     },
   });
@@ -17,6 +17,9 @@ export async function getPublicServiceUseCase(uuid: string) {
     ...service,
     status: service.status as import('../../../domain/entities/Service').ServiceStatus,
   });
+
+  const pickupChecklist = service.checklists.find(c => c.type === 'PICKUP');
+  const deliveryChecklist = service.checklists.find(c => c.type === 'DELIVERY');
 
   return {
     service: {
@@ -32,7 +35,10 @@ export async function getPublicServiceUseCase(uuid: string) {
       receiptConfirmedAt: service.receiptConfirmedAt,
       createdAt: service.createdAt,
     },
-    checklist: service.checklist?.isLocked ? service.checklist : null,
+    checklists: {
+      pickup: pickupChecklist?.isLocked ? pickupChecklist : null,
+      delivery: deliveryChecklist?.isLocked ? deliveryChecklist : null,
+    },
     media: {
       entry: service.media.filter((m) => m.type === 'ENTRY').map((m) => ({ id: m.id, url: m.url, createdAt: m.createdAt })),
       exit: service.media.filter((m) => m.type === 'EXIT').map((m) => ({ id: m.id, url: m.url, createdAt: m.createdAt })),

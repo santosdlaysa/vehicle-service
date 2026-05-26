@@ -8,7 +8,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { StatusTimeline } from '@/components/ui/StatusTimeline';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight, Copy, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight, Copy, CheckCircle2, Circle, AlertCircle, UserCheck, Calendar, FileText } from 'lucide-react';
 
 export default function ServiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +17,6 @@ export default function ServiceDetailPage() {
   const [changingStatus, setChangingStatus] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [sharedLink, setSharedLink] = useState<string | null>(null);
-
   async function fetchService() {
     try {
       const res = await api.get<{ service: Service }>(`/services/${id}`);
@@ -75,11 +74,12 @@ export default function ServiceDetailPage() {
   type Step = { label: string; done: boolean; href?: string; forStatus: ServiceStatus };
 
   const allSteps: Step[] = [
-    { label: 'Preencher checklist', done: !!service.checklist, href: `/admin/services/${id}/checklist`, forStatus: 'RECEIVED' },
-    { label: 'Adicionar foto de entrada', done: entryPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'RECEIVED' },
-    { label: 'Adicionar foto de saída', done: exitPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'FINISHED' },
-    { label: 'Compartilhar link com cliente', done: !!service.linkSharedAt, forStatus: 'READY' },
-    { label: 'Cliente confirmou o recebimento', done: !!service.receiptConfirmedAt, forStatus: 'DELIVERED' },
+    { label: 'Preencher checklist de busca', done: !!(service.checklists?.find(c => c.type === 'PICKUP')), href: `/admin/services/${id}/checklist`, forStatus: 'AGUARDANDO_COLETA' },
+    { label: 'Adicionar foto de entrada', done: entryPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'RECEBIDO_NA_ESTETICA' },
+    { label: 'Adicionar foto de saida', done: exitPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'EM_LAVAGEM_SERVICO' },
+    { label: 'Preencher checklist de entrega', done: !!(service.checklists?.find(c => c.type === 'DELIVERY')), href: `/admin/services/${id}/checklist`, forStatus: 'EM_TRANSITO_PARA_ENTREGA' },
+    { label: 'Compartilhar link com cliente', done: !!service.linkSharedAt, forStatus: 'PRONTO_PARA_DEVOLUCAO' },
+    { label: 'Cliente confirmou o recebimento', done: !!service.receiptConfirmedAt, forStatus: 'ENTREGUE_CONCLUIDO' },
   ];
 
   const currentSteps = allSteps.filter(s => s.forStatus === service.status);
@@ -112,7 +112,7 @@ export default function ServiceDetailPage() {
           <StatusTimeline currentStatus={service.status} />
 
           {/* Checklist de progresso completo */}
-          {service.status !== 'DELIVERED' && (
+          {service.status !== 'ENTREGUE_CONCLUIDO' && (
             <div className="mt-5 border border-gray-100 rounded-lg overflow-hidden">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide px-3 py-2 bg-gray-50">
                 Checklist do atendimento
@@ -158,7 +158,7 @@ export default function ServiceDetailPage() {
           )}
 
           <div className="mt-5 space-y-3">
-            {nextStatus && nextStatus !== 'CLOSED' && (
+            {nextStatus && nextStatus !== 'ENTREGUE_CONCLUIDO' && (
               <button
                 onClick={() => handleStatusChange(nextStatus)}
                 disabled={changingStatus || !allCurrentStepsDone}
@@ -169,17 +169,17 @@ export default function ServiceDetailPage() {
               </button>
             )}
 
-            {service.status === 'DELIVERED' && (
+            {service.status === 'EM_TRANSITO_PARA_ENTREGA' && (
               <button
-                onClick={() => handleStatusChange('CLOSED')}
+                onClick={() => handleStatusChange('ENTREGUE_CONCLUIDO')}
                 disabled={changingStatus}
                 className="w-full rounded-lg bg-gray-800 py-2.5 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
-                {changingStatus ? 'Encerrando...' : 'Encerrar atendimento'}
+                {changingStatus ? 'Concluindo...' : 'Concluir entrega'}
               </button>
             )}
 
-            {service.status === 'READY' && !service.linkSharedAt && (
+            {service.status === 'PRONTO_PARA_DEVOLUCAO' && !service.linkSharedAt && (
               <button
                 onClick={handleShare}
                 disabled={sharing}
@@ -214,6 +214,13 @@ export default function ServiceDetailPage() {
 
         {/* Info cards */}
         <div className="lg:col-span-2 space-y-4">
+          {service.customerId && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex items-center gap-2 text-sm text-blue-700">
+              <UserCheck size={16} />
+              Solicitado pelo cliente
+            </div>
+          )}
+
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-900 mb-4">Informações</h2>
             <dl className="grid grid-cols-2 gap-4 text-sm">
@@ -225,6 +232,24 @@ export default function ServiceDetailPage() {
                 <dt className="text-gray-500">Data de entrada</dt>
                 <dd className="font-medium">{new Date(service.createdAt).toLocaleString('pt-BR')}</dd>
               </div>
+              {service.driverName && (
+                <div>
+                  <dt className="text-gray-500">Motorista/Chofer</dt>
+                  <dd className="font-medium">{service.driverName}</dd>
+                </div>
+              )}
+              {service.pickupAddress && (
+                <div>
+                  <dt className="text-gray-500">Endereço de Coleta</dt>
+                  <dd className="font-medium">{service.pickupAddress}</dd>
+                </div>
+              )}
+              {service.deliveryAddress && (
+                <div>
+                  <dt className="text-gray-500">Endereço de Devolução</dt>
+                  <dd className="font-medium">{service.deliveryAddress}</dd>
+                </div>
+              )}
               {service.deliveredAt && (
                 <div>
                   <dt className="text-gray-500">Data de entrega</dt>
@@ -237,7 +262,21 @@ export default function ServiceDetailPage() {
                   <dd className="font-medium text-green-600">{new Date(service.receiptConfirmedAt).toLocaleString('pt-BR')}</dd>
                 </div>
               )}
+              {service.preferredDate && (
+                <div>
+                  <dt className="text-gray-500 flex items-center gap-1"><Calendar size={14} /> Data preferida</dt>
+                  <dd className="font-medium">{new Date(service.preferredDate).toLocaleString('pt-BR')}</dd>
+                </div>
+              )}
             </dl>
+            {service.description && (
+              <div className="mt-4 rounded-lg bg-gray-50 p-4">
+                <p className="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                  <FileText size={14} /> Descricao do servico
+                </p>
+                <p className="text-sm text-gray-600">{service.description}</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -251,7 +290,7 @@ export default function ServiceDetailPage() {
               <div>
                 <p className="font-medium text-sm text-gray-900">Checklist</p>
                 <p className="text-xs text-gray-500">
-                  {service.checklist?.isLocked ? 'Bloqueado' : 'Editar'}
+                  {service.status === 'ENTREGUE_CONCLUIDO' ? 'Bloqueado' : 'Editar'}
                 </p>
               </div>
             </Link>

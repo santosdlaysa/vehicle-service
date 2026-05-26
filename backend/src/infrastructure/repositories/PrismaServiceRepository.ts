@@ -2,11 +2,16 @@ import { prisma } from '../database/prisma';
 import { ServiceStatus } from '../../domain/entities/Service';
 
 export class PrismaServiceRepository {
-  async findAll(filters?: { status?: ServiceStatus; search?: string }, page = 1, limit = 20) {
+  async findAll(
+    filters?: { status?: ServiceStatus; search?: string; customerId?: string },
+    page = 1,
+    limit = 20,
+  ) {
     const skip = (page - 1) * limit;
     const where: Record<string, unknown> = {};
 
     if (filters?.status) where.status = filters.status;
+    if (filters?.customerId) where.customerId = filters.customerId;
     if (filters?.search) {
       where.OR = [
         { customerName: { contains: filters.search, mode: 'insensitive' } },
@@ -23,6 +28,7 @@ export class PrismaServiceRepository {
         orderBy: { createdAt: 'desc' },
         include: {
           creator: { select: { id: true, name: true } },
+          customer: { select: { id: true, name: true, email: true, phone: true } },
           _count: { select: { media: true } },
         },
       }),
@@ -37,7 +43,8 @@ export class PrismaServiceRepository {
       where: { id },
       include: {
         creator: { select: { id: true, name: true } },
-        checklist: true,
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        checklists: { orderBy: { type: 'asc' } },
         media: { orderBy: { createdAt: 'asc' } },
         statusHistory: {
           orderBy: { changedAt: 'asc' },
@@ -53,6 +60,9 @@ export class PrismaServiceRepository {
     vehicleModel: string;
     vehiclePlate: string;
     vehicleColor: string;
+    pickupAddress?: string;
+    deliveryAddress?: string;
+    driverName?: string;
     createdBy: string;
   }) {
     return prisma.$transaction(async (tx) => {
@@ -61,8 +71,38 @@ export class PrismaServiceRepository {
         data: {
           serviceId: service.id,
           oldStatus: null,
-          newStatus: 'RECEIVED',
+          newStatus: 'AGUARDANDO_COLETA',
           changedBy: data.createdBy,
+        },
+      });
+      return service;
+    });
+  }
+
+  async createClientRequest(data: {
+    customerName: string;
+    customerPhone: string;
+    vehicleModel: string;
+    vehiclePlate: string;
+    vehicleColor: string;
+    customerId: string;
+    description?: string;
+    preferredDate?: Date;
+    pickupAddress?: string;
+    deliveryAddress?: string;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const service = await tx.service.create({
+        data: {
+          ...data,
+          status: 'AGUARDANDO_COLETA',
+        },
+      });
+      await tx.statusHistory.create({
+        data: {
+          serviceId: service.id,
+          oldStatus: null,
+          newStatus: 'AGUARDANDO_COLETA',
         },
       });
       return service;
@@ -77,6 +117,9 @@ export class PrismaServiceRepository {
       vehicleModel: string;
       vehiclePlate: string;
       vehicleColor: string;
+      pickupAddress: string;
+      deliveryAddress: string;
+      driverName: string;
     }>,
   ) {
     return prisma.service.update({ where: { id }, data });

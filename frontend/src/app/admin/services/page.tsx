@@ -9,11 +9,13 @@ import { Plus, Search } from 'lucide-react';
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Todos' },
-  { value: 'RECEIVED', label: STATUS_LABELS.RECEIVED },
-  { value: 'IN_PROGRESS', label: STATUS_LABELS.IN_PROGRESS },
-  { value: 'FINISHED', label: STATUS_LABELS.FINISHED },
-  { value: 'READY', label: STATUS_LABELS.READY },
-  { value: 'DELIVERED', label: STATUS_LABELS.DELIVERED },
+  { value: 'AGUARDANDO_COLETA', label: STATUS_LABELS.AGUARDANDO_COLETA },
+  { value: 'EM_TRANSITO_PARA_ESTETICA', label: STATUS_LABELS.EM_TRANSITO_PARA_ESTETICA },
+  { value: 'RECEBIDO_NA_ESTETICA', label: STATUS_LABELS.RECEBIDO_NA_ESTETICA },
+  { value: 'EM_LAVAGEM_SERVICO', label: STATUS_LABELS.EM_LAVAGEM_SERVICO },
+  { value: 'PRONTO_PARA_DEVOLUCAO', label: STATUS_LABELS.PRONTO_PARA_DEVOLUCAO },
+  { value: 'EM_TRANSITO_PARA_ENTREGA', label: STATUS_LABELS.EM_TRANSITO_PARA_ENTREGA },
+  { value: 'ENTREGUE_CONCLUIDO', label: STATUS_LABELS.ENTREGUE_CONCLUIDO },
 ];
 
 export default function ServicesPage() {

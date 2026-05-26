@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { Service, STATUS_LABELS, ServiceStatus } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import Link from 'next/link';
-import { Car, ClipboardList, CheckCircle, Package } from 'lucide-react';
+import { Car, ClipboardList, CheckCircle, Package, Clock } from 'lucide-react';
 
 export default function DashboardPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -27,10 +27,11 @@ export default function DashboardPage() {
   );
 
   const stats = [
-    { label: 'Recebidos', value: counts.RECEIVED ?? 0, icon: Car, color: 'text-yellow-600 bg-yellow-50' },
-    { label: 'Em serviço', value: counts.IN_PROGRESS ?? 0, icon: ClipboardList, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Prontos', value: counts.READY ?? 0, icon: Package, color: 'text-green-600 bg-green-50' },
-    { label: 'Entregues', value: counts.DELIVERED ?? 0, icon: CheckCircle, color: 'text-gray-600 bg-gray-50' },
+    { label: 'Aguardando', value: counts.AGUARDANDO_COLETA ?? 0, icon: Clock, color: 'text-orange-600 bg-orange-50' },
+    { label: 'Em transito', value: (counts.EM_TRANSITO_PARA_ESTETICA ?? 0) + (counts.EM_TRANSITO_PARA_ENTREGA ?? 0), icon: Car, color: 'text-yellow-600 bg-yellow-50' },
+    { label: 'Na estetica', value: (counts.RECEBIDO_NA_ESTETICA ?? 0) + (counts.EM_LAVAGEM_SERVICO ?? 0), icon: ClipboardList, color: 'text-blue-600 bg-blue-50' },
+    { label: 'Prontos', value: counts.PRONTO_PARA_DEVOLUCAO ?? 0, icon: Package, color: 'text-green-600 bg-green-50' },
+    { label: 'Concluidos', value: counts.ENTREGUE_CONCLUIDO ?? 0, icon: CheckCircle, color: 'text-gray-600 bg-gray-50' },
   ];
 
   return (
@@ -40,7 +41,7 @@ export default function DashboardPage() {
         <p className="text-sm text-gray-500 mt-1">Visão geral dos atendimentos</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-5">
         {stats.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
             <div className={`inline-flex p-2 rounded-lg ${color} mb-3`}>

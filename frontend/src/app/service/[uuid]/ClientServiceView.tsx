@@ -18,7 +18,8 @@ export function ClientServiceView({ initialData, uuid }: Props) {
   const [data, setData] = useState(initialData);
   const [confirming, setConfirming] = useState(false);
   const [activeTab, setActiveTab] = useState<'status' | 'checklist' | 'photos'>('status');
-  const { service, checklist, media } = data;
+  const { service, checklists, media } = data;
+  const checklist = checklists.pickup ?? checklists.delivery;
 
   // Poll every 30s for status updates
   useEffect(() => {
@@ -46,10 +47,10 @@ export function ClientServiceView({ initialData, uuid }: Props) {
   }
 
   const tabs = [
-    { key: 'status', label: 'Status' },
-    { key: 'checklist', label: 'Checklist', disabled: !checklist },
-    { key: 'photos', label: 'Fotos', disabled: media.entry.length === 0 && media.exit.length === 0 },
-  ] as const;
+    { key: 'status' as const, label: 'Status', disabled: false },
+    { key: 'checklist' as const, label: 'Checklist', disabled: !checklist },
+    { key: 'photos' as const, label: 'Fotos', disabled: media.entry.length === 0 && media.exit.length === 0 },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +112,7 @@ export function ClientServiceView({ initialData, uuid }: Props) {
               <StatusTimeline currentStatus={service.status} />
             </div>
 
-            {service.status === 'DELIVERED' && !service.receiptConfirmedAt && !service.isExpired && (
+            {service.status === 'ENTREGUE_CONCLUIDO' && !service.receiptConfirmedAt && !service.isExpired && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
                 <p className="text-sm text-gray-600 mb-4">
                   Seu veículo foi entregue! Confirme o recebimento clicando no botão abaixo.

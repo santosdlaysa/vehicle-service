@@ -8,12 +8,13 @@ interface Props {
 
 export function StatusTimeline({ currentStatus }: Props) {
   const currentIdx = STATUS_ORDER.indexOf(currentStatus);
+  const isTerminal = currentStatus === 'ENTREGUE_CONCLUIDO';
 
   return (
     <div className="flex flex-col gap-0">
       {STATUS_ORDER.map((status, idx) => {
-        const done = idx < currentIdx;
-        const active = idx === currentIdx;
+        const done = idx < currentIdx || (isTerminal && idx === currentIdx);
+        const active = idx === currentIdx && !isTerminal;
 
         return (
           <div key={status} className="flex items-start gap-3">

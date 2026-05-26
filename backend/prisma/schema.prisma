@@ -8,12 +8,13 @@ datasource db {
 }
 
 enum ServiceStatus {
-  RECEIVED
-  IN_PROGRESS
-  FINISHED
-  READY
-  DELIVERED
-  CLOSED
+  AGUARDANDO_COLETA
+  EM_TRANSITO_PARA_ESTETICA
+  RECEBIDO_NA_ESTETICA
+  EM_LAVAGEM_SERVICO
+  PRONTO_PARA_DEVOLUCAO
+  EM_TRANSITO_PARA_ENTREGA
+  ENTREGUE_CONCLUIDO
 }
 
 enum MediaType {
@@ -35,6 +36,19 @@ model User {
   @@map("users")
 }
 
+model Customer {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  phone        String
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  services Service[]
+
+  @@map("customers")
+}
+
 model Service {
   id                 String        @id @default(uuid())
   customerName       String        @map("customer_name")
@@ -42,40 +56,56 @@ model Service {
   vehicleModel       String        @map("vehicle_model")
   vehiclePlate       String        @map("vehicle_plate")
   vehicleColor       String        @map("vehicle_color")
-  status             ServiceStatus @default(RECEIVED)
+  status             ServiceStatus @default(AGUARDANDO_COLETA)
+  description        String?
+  preferredDate      DateTime?     @map("preferred_date")
+  pickupAddress      String?       @map("pickup_address")
+  deliveryAddress    String?       @map("delivery_address")
+  driverName         String?       @map("driver_name")
   linkSharedAt       DateTime?     @map("link_shared_at")
   deliveredAt        DateTime?     @map("delivered_at")
   receiptConfirmedAt DateTime?     @map("receipt_confirmed_at")
-  createdBy          String        @map("created_by")
+  createdBy          String?       @map("created_by")
+  customerId         String?       @map("customer_id")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
-  creator       User            @relation("CreatedBy", fields: [createdBy], references: [id])
-  checklist     Checklist?
+  creator       User?           @relation("CreatedBy", fields: [createdBy], references: [id])
+  customer      Customer?       @relation(fields: [customerId], references: [id])
+  checklists    Checklist[]
   media         ServiceMedia[]
   statusHistory StatusHistory[]
 
   @@map("services")
 }
 
+enum ChecklistType {
+  PICKUP
+  DELIVERY
+}
+
 model Checklist {
-  id              String   @id @default(uuid())
-  serviceId       String   @unique @map("service_id")
-  scratches       Boolean  @default(false)
-  dents           Boolean  @default(false)
-  mirrorsOk       Boolean  @default(true) @map("mirrors_ok")
-  lightsOk        Boolean  @default(true) @map("lights_ok")
-  tiresOk         Boolean  @default(true) @map("tires_ok")
-  glassOk         Boolean  @default(true) @map("glass_ok")
-  internalObjects String?  @map("internal_objects")
-  fuelLevel       String   @default("1/2") @map("fuel_level")
-  notes           String?
-  isLocked        Boolean  @default(false) @map("is_locked")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String        @id @default(uuid())
+  serviceId        String        @map("service_id")
+  type             ChecklistType @default(PICKUP)
+  scratches        Boolean       @default(false)
+  dents            Boolean       @default(false)
+  mirrorsOk        Boolean       @default(true) @map("mirrors_ok")
+  lightsOk         Boolean       @default(true) @map("lights_ok")
+  tiresOk          Boolean       @default(true) @map("tires_ok")
+  glassOk          Boolean       @default(true) @map("glass_ok")
+  internalObjects  String?       @map("internal_objects")
+  fuelLevel        String        @default("1/2") @map("fuel_level")
+  odometer         Int?
+  odometerPhotoUrl String?       @map("odometer_photo_url")
+  notes            String?
+  isLocked         Boolean       @default(false) @map("is_locked")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
 
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
+  @@unique([serviceId, type])
   @@map("checklists")
 }
 
@@ -94,15 +124,15 @@ model ServiceMedia {
 }
 
 model StatusHistory {
-  id        String        @id @default(uuid())
-  serviceId String        @map("service_id")
+  id        String         @id @default(uuid())
+  serviceId String         @map("service_id")
   oldStatus ServiceStatus? @map("old_status")
-  newStatus ServiceStatus @map("new_status")
-  changedBy String        @map("changed_by")
-  changedAt DateTime      @default(now()) @map("changed_at")
+  newStatus ServiceStatus  @map("new_status")
+  changedBy String?        @map("changed_by")
+  changedAt DateTime       @default(now()) @map("changed_at")
 
   service       Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  changedByUser User    @relation(fields: [changedBy], references: [id])
+  changedByUser User?   @relation(fields: [changedBy], references: [id])
 
   @@map("status_history")
 }

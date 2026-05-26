@@ -23,7 +23,7 @@ export async function authRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { email, password } = request.body as { email: string; password: string };
       const user = await loginUseCase(email, password);
-      const token = app.jwt.sign({ userId: user.id });
+      const token = app.jwt.sign({ userId: user.id, role: 'admin' });
       return reply.send({ success: true, token, user });
     },
   );
