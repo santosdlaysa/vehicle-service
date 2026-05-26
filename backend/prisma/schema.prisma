@@ -29,9 +29,10 @@ model User {
   passwordHash String   @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  services      Service[]       @relation("CreatedBy")
-  uploadedMedia ServiceMedia[]
-  statusChanges StatusHistory[]
+  services        Service[]        @relation("CreatedBy")
+  uploadedMedia   ServiceMedia[]
+  statusChanges   StatusHistory[]
+  uploadedReceipts PaymentReceipt[]
 
   @@map("users")
 }
@@ -74,9 +75,10 @@ model Service {
 
   creator       User?           @relation("CreatedBy", fields: [createdBy], references: [id])
   customer      Customer?       @relation(fields: [customerId], references: [id])
-  checklists    Checklist[]
-  media         ServiceMedia[]
-  statusHistory StatusHistory[]
+  checklists      Checklist[]
+  media           ServiceMedia[]
+  statusHistory   StatusHistory[]
+  paymentReceipts PaymentReceipt[]
 
   @@map("services")
 }
@@ -135,6 +137,20 @@ model ServiceMedia {
   uploader User    @relation(fields: [uploadedBy], references: [id])
 
   @@map("service_media")
+}
+
+model PaymentReceipt {
+  id         String   @id @default(uuid())
+  serviceId  String   @map("service_id")
+  url        String
+  fileName   String   @map("file_name")
+  uploadedBy String   @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  service  Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploadedBy], references: [id])
+
+  @@map("payment_receipts")
 }
 
 model StatusHistory {

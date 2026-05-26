@@ -116,6 +116,15 @@ export interface StatusHistory {
   changedByUser?: { id: string; name: string };
 }
 
+export interface PaymentReceipt {
+  id: string;
+  serviceId: string;
+  url: string;
+  fileName: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+
 export interface PublicServiceData {
   service: {
     id: string;

@@ -1,22 +1,92 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 import { Service, STATUS_LABELS, ServiceStatus } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import Link from 'next/link';
-import { Car, ClipboardList, CheckCircle, Package, Clock, Plus } from 'lucide-react';
+import { Car, ClipboardList, CheckCircle, Package, Clock, Plus, Bell, BellOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const POLL_INTERVAL = 15_000; // 15 segundos
+
+function playNotificationSound() {
+  try {
+    const ctx = new AudioContext();
+    // Dois beeps curtos e agradáveis
+    [0, 0.2].forEach((delay) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.15);
+    });
+  } catch {}
+}
+
+function sendBrowserNotification(service: Service) {
+  if (Notification.permission !== 'granted') return;
+  const n = new Notification('Novo atendimento!', {
+    body: `${service.customerName} — ${service.vehicleModel} (${service.vehiclePlate})`,
+    icon: '/icons/icon-192x192.svg',
+    tag: `new-service-${service.id}`,
+  });
+  n.onclick = () => {
+    window.focus();
+    window.location.href = `/admin/services/${service.id}`;
+  };
+}
 
 export default function DashboardPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const knownIdsRef = useRef<Set<string> | null>(null);
+  const firstLoadRef = useRef(true);
+
+  // Inicializar estado da permissão
+  useEffect(() => {
+    if (typeof Notification !== 'undefined') {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
+  }, []);
+
+  async function requestNotifications() {
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission === 'granted') {
+      setNotificationsEnabled(true);
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setNotificationsEnabled(result === 'granted');
+    if (result === 'granted') {
+      toast.success('Notificações ativadas!');
+    }
+  }
 
   const fetchServices = useCallback(() => {
     api
       .get<{ data: Service[] }>('/services?limit=5')
-      .then((res) => setServices(res.data))
+      .then((res) => {
+        const newServices = res.data;
+        // Detectar novos atendimentos
+        if (knownIdsRef.current && !firstLoadRef.current) {
+          const newOnes = newServices.filter((s) => !knownIdsRef.current!.has(s.id));
+          if (newOnes.length > 0) {
+            playNotificationSound();
+            newOnes.forEach((s) => sendBrowserNotification(s));
+            toast(`Novo atendimento: ${newOnes[0].customerName}`, { icon: '🚗' });
+          }
+        }
+        knownIdsRef.current = new Set(newServices.map((s) => s.id));
+        firstLoadRef.current = false;
+        setServices(newServices);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -60,13 +130,27 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">Visão geral dos atendimentos</p>
         </div>
-        <Link
-          href="/admin/services/new"
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={16} />
-          Novo atendimento
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={requestNotifications}
+            title={notificationsEnabled ? 'Notificações ativadas' : 'Ativar notificações'}
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
+              notificationsEnabled
+                ? 'border-green-300 bg-green-50 text-green-700'
+                : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {notificationsEnabled ? <Bell size={16} /> : <BellOff size={16} />}
+            <span className="hidden sm:inline">{notificationsEnabled ? 'Notificações ativas' : 'Ativar notificações'}</span>
+          </button>
+          <Link
+            href="/admin/services/new"
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">Novo atendimento</span>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-5">

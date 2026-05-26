@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/components/providers/AuthProvider';
 import { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
-import { LayoutDashboard, ClipboardList, LogOut, Car, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, LogOut, Car, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import clsx from 'clsx';
 
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -35,6 +35,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/services', label: 'Atendimentos', icon: ClipboardList },
+    { href: '/admin/reports', label: 'Relatórios', icon: BarChart3 },
   ];
 
   return (

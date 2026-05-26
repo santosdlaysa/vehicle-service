@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Service, ServiceMedia, STATUS_ORDER, STATUS_LABELS, ServiceStatus } from '@/types';
+import { Service, ServiceMedia, PaymentReceipt, STATUS_ORDER, STATUS_LABELS, ServiceStatus } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { StatusTimeline } from '@/components/ui/StatusTimeline';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight, Copy, CheckCircle2, Circle, AlertCircle, UserCheck, Calendar, FileText, Camera, ImagePlus, X, Loader2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight, Copy, CheckCircle2, Circle, AlertCircle, UserCheck, Calendar, FileText, Camera, ImagePlus, X, Loader2, CheckCircle, Receipt, Upload, Trash2, ExternalLink } from 'lucide-react';
 
 export default function ServiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -321,8 +321,126 @@ export default function ServiceDetailPage() {
               </div>
             </Link>
           </div>
+
+          {/* Comprovante de pagamento */}
+          <PaymentReceiptSection serviceId={id} />
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ───────────── Payment Receipt Component ───────────── */
+
+function PaymentReceiptSection({ serviceId }: { serviceId: string }) {
+  const [receipts, setReceipts] = useState<PaymentReceipt[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const fetchReceipts = useCallback(() => {
+    api.get<{ receipts: PaymentReceipt[] }>(`/services/${serviceId}/receipts`)
+      .then((res) => setReceipts(res.receipts))
+      .catch(() => {});
+  }, [serviceId]);
+
+  useEffect(() => { fetchReceipts(); }, [fetchReceipts]);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('file', file);
+        await api.upload(`/services/${serviceId}/receipts`, formData);
+      }
+      toast.success('Comprovante enviado!');
+      fetchReceipts();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao enviar comprovante');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  async function handleDelete(receiptId: string) {
+    try {
+      await api.delete(`/services/${serviceId}/receipts/${receiptId}`);
+      toast.success('Comprovante removido.');
+      fetchReceipts();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover');
+    }
+  }
+
+  const isPdf = (url: string) => url.endsWith('.pdf');
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Receipt size={18} className="text-green-600" />
+          <h3 className="font-semibold text-sm text-gray-900">Comprovante de Pagamento</h3>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          multiple
+          onChange={handleUpload}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+        >
+          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          {uploading ? 'Enviando...' : 'Anexar'}
+        </button>
+      </div>
+
+      {receipts.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-4">Nenhum comprovante anexado.</p>
+      ) : (
+        <div className="space-y-2">
+          {receipts.map((r) => (
+            <div key={r.id} className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 group">
+              {isPdf(r.url) ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-500 shrink-0">
+                  <FileText size={18} />
+                </div>
+              ) : (
+                <img src={r.url} alt="Comprovante" className="h-10 w-10 rounded-lg object-cover shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-700 truncate">{r.fileName}</p>
+                <p className="text-xs text-gray-400">
+                  {new Date(r.createdAt).toLocaleString('pt-BR')}
+                </p>
+              </div>
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                title="Abrir"
+              >
+                <ExternalLink size={14} />
+              </a>
+              <button
+                onClick={() => handleDelete(r.id)}
+                className="p-1.5 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                title="Remover"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

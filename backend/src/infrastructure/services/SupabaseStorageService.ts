@@ -37,6 +37,43 @@ export class SupabaseStorageService {
     return urlData.publicUrl;
   }
 
+  async uploadRaw(
+    buffer: Buffer,
+    mimeType: string,
+    serviceId: string,
+    type: string,
+  ): Promise<string> {
+    // Para imagens, comprimir. Para outros tipos (PDF), manter original.
+    let finalBuffer = buffer;
+    let contentType = mimeType;
+    let ext = mimeType.split('/')[1] || 'bin';
+
+    if (mimeType.startsWith('image/')) {
+      finalBuffer = await sharp(buffer)
+        .resize({ width: 1920, withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+      contentType = 'image/jpeg';
+      ext = 'jpg';
+    } else if (mimeType === 'application/pdf') {
+      ext = 'pdf';
+    }
+
+    const fileName = `${serviceId}/${type}/${uuid()}.${ext}`;
+
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .upload(fileName, finalBuffer, {
+        contentType,
+        upsert: false,
+      });
+
+    if (error) throw new Error(`Falha no upload: ${error.message}`);
+
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(data.path);
+    return urlData.publicUrl;
+  }
+
   async delete(filePath: string): Promise<void> {
     const path = filePath.split(`${BUCKET}/`)[1];
     if (path) {
