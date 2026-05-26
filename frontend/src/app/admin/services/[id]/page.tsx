@@ -78,7 +78,8 @@ export default function ServiceDetailPage() {
     { label: 'Adicionar foto de entrada', done: entryPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'RECEBIDO_NA_ESTETICA' },
     { label: 'Adicionar foto de saida', done: exitPhotos.length > 0, href: `/admin/services/${id}/media`, forStatus: 'EM_LAVAGEM_SERVICO' },
     { label: 'Preencher checklist de entrega', done: !!(service.checklists?.find(c => c.type === 'DELIVERY')), href: `/admin/services/${id}/checklist`, forStatus: 'EM_TRANSITO_PARA_ENTREGA' },
-    { label: 'Compartilhar link com cliente', done: !!service.linkSharedAt, forStatus: 'PRONTO_PARA_DEVOLUCAO' },
+    // Compartilhar link só aparece para clientes sem cadastro
+    ...(!service.customerId ? [{ label: 'Compartilhar link com cliente', done: !!service.linkSharedAt, forStatus: 'PRONTO_PARA_DEVOLUCAO' as ServiceStatus }] : []),
     { label: 'Cliente confirmou o recebimento', done: !!service.receiptConfirmedAt, forStatus: 'ENTREGUE_CONCLUIDO' },
   ];
 
@@ -179,7 +180,7 @@ export default function ServiceDetailPage() {
               </button>
             )}
 
-            {service.status === 'PRONTO_PARA_DEVOLUCAO' && !service.linkSharedAt && (
+            {service.status === 'PRONTO_PARA_DEVOLUCAO' && !service.customerId && !service.linkSharedAt && (
               <button
                 onClick={handleShare}
                 disabled={sharing}
@@ -190,7 +191,7 @@ export default function ServiceDetailPage() {
               </button>
             )}
 
-            {service.linkSharedAt && (
+            {service.linkSharedAt && !service.customerId && (
               <div className="space-y-2">
                 <p className="text-xs text-center text-gray-400">
                   Link compartilhado em{' '}
