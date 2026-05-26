@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Service, STATUS_ORDER, STATUS_LABELS, ServiceStatus } from '@/types';
+import { Service, ServiceMedia, STATUS_ORDER, STATUS_LABELS, ServiceStatus } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { StatusTimeline } from '@/components/ui/StatusTimeline';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight, Copy, CheckCircle2, Circle, AlertCircle, UserCheck, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Image, Share2, ChevronRight, Copy, CheckCircle2, Circle, AlertCircle, UserCheck, Calendar, FileText, Camera, ImagePlus, X, Loader2, CheckCircle } from 'lucide-react';
 
 export default function ServiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -212,6 +212,18 @@ export default function ServiceDetailPage() {
           </div>
         </div>
 
+        {/* Inline photo capture step */}
+        {(service.status === 'EM_TRANSITO_PARA_ESTETICA' || service.status === 'EM_LAVAGEM_SERVICO') && (
+          <InlinePhotoCapture
+            serviceId={id}
+            type={service.status === 'EM_TRANSITO_PARA_ESTETICA' ? 'ENTRY' : 'EXIT'}
+            existingPhotos={
+              service.status === 'EM_TRANSITO_PARA_ESTETICA' ? entryPhotos : exitPhotos
+            }
+            onPhotosChanged={fetchService}
+          />
+        )}
+
         {/* Info cards */}
         <div className="lg:col-span-2 space-y-4">
           {service.customerId && (
@@ -310,6 +322,172 @@ export default function ServiceDetailPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ───────────── Inline Photo Capture Component ───────────── */
+
+function InlinePhotoCapture({
+  serviceId,
+  type,
+  existingPhotos,
+  onPhotosChanged,
+}: {
+  serviceId: string;
+  type: 'ENTRY' | 'EXIT';
+  existingPhotos: ServiceMedia[];
+  onPhotosChanged: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+
+  const isEntry = type === 'ENTRY';
+  const title = isEntry ? 'Registrar fotos de entrada' : 'Registrar fotos de saída';
+  const subtitle = isEntry
+    ? 'Fotografe o veículo antes de levar para a estética: painel, lataria, pneus, interior.'
+    : 'Fotografe o veículo após o serviço: resultado da lavagem, interior, acabamento.';
+
+  async function uploadFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('file', file);
+        await api.upload(`/services/${serviceId}/media?type=${type}`, formData);
+      }
+      toast.success(`${files.length > 1 ? 'Fotos enviadas' : 'Foto enviada'} com sucesso!`);
+      onPhotosChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao enviar foto');
+    } finally {
+      setUploading(false);
+      if (cameraRef.current) cameraRef.current.value = '';
+      if (galleryRef.current) galleryRef.current.value = '';
+    }
+  }
+
+  async function handleDelete(mediaId: string) {
+    setDeleting(mediaId);
+    try {
+      await api.delete(`/services/${serviceId}/media/${mediaId}`);
+      toast.success('Foto removida.');
+      onPhotosChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover foto');
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  const hasPhotos = existingPhotos.length > 0;
+
+  return (
+    <div className={`lg:col-span-2 rounded-xl border-2 ${hasPhotos ? 'border-green-200 bg-green-50/30' : 'border-blue-300 bg-blue-50/50'} p-5 space-y-4`}>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${hasPhotos ? 'bg-green-100' : 'bg-blue-100 animate-pulse'}`}>
+          {hasPhotos ? (
+            <CheckCircle size={22} className="text-green-600" />
+          ) : (
+            <Camera size={22} className="text-blue-600" />
+          )}
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">{title}</h3>
+          <p className="text-xs text-gray-500">{subtitle}</p>
+        </div>
+        {hasPhotos && (
+          <span className="ml-auto text-xs font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
+            {existingPhotos.length} foto{existingPhotos.length > 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
+      {/* Photo grid */}
+      {hasPhotos && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {existingPhotos.map((photo) => (
+            <div key={photo.id} className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+              <img
+                src={photo.url}
+                alt="Foto do veículo"
+                className="w-full h-full object-cover"
+              />
+              <button
+                onClick={() => handleDelete(photo.id)}
+                disabled={deleting === photo.id}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+              >
+                {deleting === photo.id ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <X size={12} />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Capture buttons */}
+      <div className="flex gap-3">
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => uploadFiles(e.target.files)}
+          className="hidden"
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={(e) => uploadFiles(e.target.files)}
+          className="hidden"
+        />
+
+        <button
+          onClick={() => cameraRef.current?.click()}
+          disabled={uploading}
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {uploading ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <>
+              <Camera size={18} />
+              Tirar foto
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={() => galleryRef.current?.click()}
+          disabled={uploading}
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-blue-300 py-3 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 transition-colors"
+        >
+          {uploading ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <>
+              <ImagePlus size={18} />
+              Galeria
+            </>
+          )}
+        </button>
+      </div>
+
+      {!hasPhotos && (
+        <p className="text-center text-xs text-amber-600">
+          Adicione pelo menos 1 foto para poder avançar o status.
+        </p>
+      )}
     </div>
   );
 }
