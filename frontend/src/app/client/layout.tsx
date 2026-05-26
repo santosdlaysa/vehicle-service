@@ -41,14 +41,15 @@ function ClientShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       {/* Top nav */}
-      <header className="bg-gray-900 text-white shadow-md">
+      <header className="fixed top-0 left-0 right-0 z-20 bg-gray-900 text-white shadow-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <Car size={22} className="text-blue-400" />
             <span className="text-lg font-bold">AutoTrack</span>
           </div>
 
-          <nav className="flex items-center gap-1">
+          {/* Desktop nav */}
+          <nav className="hidden sm:flex items-center gap-1">
             {navItems.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
@@ -61,7 +62,7 @@ function ClientShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon size={16} />
-                <span className="hidden sm:inline">{label}</span>
+                <span>{label}</span>
               </Link>
             ))}
           </nav>
@@ -80,9 +81,28 @@ function ClientShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Content */}
-      <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-6 pt-[68px] pb-20 sm:pb-6">
         {children}
       </main>
+
+      {/* Mobile bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 flex sm:hidden items-stretch justify-around border-t border-gray-200 bg-white safe-bottom">
+        {navItems.map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={clsx(
+              'flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium transition-colors',
+              pathname.startsWith(href)
+                ? 'text-blue-600'
+                : 'text-gray-400',
+            )}
+          >
+            <Icon size={20} />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
 
       <Toaster position="top-right" />
     </div>

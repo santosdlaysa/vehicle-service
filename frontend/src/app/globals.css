@@ -5,5 +5,21 @@
 @layer base {
   body {
     @apply antialiased bg-gray-50 text-gray-900;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection on inputs and textareas */
+  input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+@layer utilities {
+  /* Safe area padding for bottom nav on notched devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }

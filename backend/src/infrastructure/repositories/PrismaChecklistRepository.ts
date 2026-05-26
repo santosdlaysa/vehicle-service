@@ -36,10 +36,17 @@ export class PrismaChecklistRepository {
       notes?: string;
     },
   ) {
+    const { scratches, dents, mirrorsOk, lightsOk, tiresOk, glassOk, internalObjects, fuelLevel, odometer, notes } = data;
+    const cleanData = { scratches, dents, mirrorsOk, lightsOk, tiresOk, glassOk, internalObjects, fuelLevel, odometer, notes };
+    // Remove undefined keys
+    Object.keys(cleanData).forEach(key => {
+      if ((cleanData as Record<string, unknown>)[key] === undefined) delete (cleanData as Record<string, unknown>)[key];
+    });
+
     return prisma.checklist.upsert({
       where: { serviceId_type: { serviceId, type } },
-      create: { serviceId, type, ...data },
-      update: data,
+      create: { serviceId, type, ...cleanData },
+      update: cleanData,
       include: includePhotos,
     });
   }

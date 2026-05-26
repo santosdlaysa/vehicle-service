@@ -39,10 +39,10 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
+      {/* Sidebar - desktop only */}
       <aside
         className={clsx(
-          'relative flex flex-col bg-gray-900 text-white transition-all duration-300 ease-in-out shrink-0',
+          'relative hidden md:flex flex-col bg-gray-900 text-white transition-all duration-300 ease-in-out shrink-0',
           collapsed ? 'w-16' : 'w-64',
         )}
       >
@@ -106,10 +106,47 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         </button>
       </aside>
 
+      {/* Mobile top bar */}
+      <div className="fixed top-0 left-0 right-0 z-20 flex md:hidden items-center justify-between bg-gray-900 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Car size={20} className="text-blue-400" />
+          <span className="text-base font-bold text-white">AutoTrack</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 truncate max-w-[120px]">{user?.name}</span>
+          <button
+            onClick={() => { logout(); router.replace('/admin/login'); }}
+            className="flex items-center rounded-lg p-2 text-gray-300 hover:bg-gray-800 transition-colors"
+            title="Sair"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-gray-50 pt-14 pb-20 md:pt-0 md:pb-0">
         {children}
       </main>
+
+      {/* Mobile bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 flex md:hidden items-stretch justify-around border-t border-gray-200 bg-white safe-bottom">
+        {navItems.map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={clsx(
+              'flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium transition-colors',
+              pathname.startsWith(href)
+                ? 'text-blue-600'
+                : 'text-gray-400',
+            )}
+          >
+            <Icon size={20} />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
 
       <Toaster position="top-right" />
     </div>
